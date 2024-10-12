@@ -10,26 +10,45 @@ const Reservation = () => {
   const query = new URLSearchParams(location.search);
   const roomId = query.get("roomId");
   const [room, setRoom] = useState(null);
+  const [form] = Form.useForm();
   const [prefix, setPrefix] = useState(null);
   const [firstname, setFirstname] = useState(null);
   const [lastname, setLastname] = useState(null);
+  const [country, setCountry] = useState(null);
   const [email, setEmail] = useState(null);
   const [confirmEmail, setConfirmEmail] = useState(null);
   const [tel, setTel] = useState(null);
   const [consent, setConsent] = useState(null);
-
-  const isFormValid = () => {
-    return (
-      prefix &&
-      firstname &&
-      lastname &&
-      email &&
-      confirmEmail &&
-      email === confirmEmail &&
-      tel &&
-      consent
-    );
+  const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+  const values = Form.useWatch([], form);
+  const validatePhoneNumber = (_, value) => {
+    const phonePattern = /^0[0-9]{9}$/;
+    if (!value) {
+      return Promise.resolve();
+    }
+    if (phonePattern.test(value)) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error("หมายเลขโทรศัพท์ไม่ถูกต้อง"));
   };
+  const handleSubmit = () => {
+    alert("Pass");
+  };
+
+  const hasErrors = form.getFieldsError().some(({ errors }) => errors.length);
+  const isTouched = form.isFieldsTouched(true);
+  const isValid = isTouched && !hasErrors && !isSubmitDisabled;
+
+  useEffect(() => {
+    form
+      .validateFields({ validateOnly: true })
+      .then((formValues) => {
+        setIsSubmitDisabled(!Object.values(formValues).length);
+      })
+      .catch(() => {
+        setIsSubmitDisabled(true);
+      });
+  }, [form, values]);
 
   useEffect(() => {
     const fetchRoom = async () => {
@@ -72,10 +91,13 @@ const Reservation = () => {
       </nav>
       <div className="max-w-[1200px] w-[90%] mx-auto grid grid-cols-12 gap-8 mt-10">
         {/* left-side */}
-        <Form 
-          name="reservation" 
+        <Form
+          form={form}
+          name="reservation"
           layout="vertical"
           className="col-span-8 w-full bg-white rounded-md p-4"
+          autoComplete="off"
+          onFinish={handleSubmit}
         >
           <p className="text-xl mb-4">กรุณาใส่รายละเอียด</p>
           {/* กรุณาใส่รายละเอียด */}
@@ -83,78 +105,142 @@ const Reservation = () => {
             <div className="flex gap-2 w-full">
               <div className="w-[300px] flex flex-shrink-0 gap-2">
                 <Form.Item
-                  rules={[{ required: true, message: "กรุณาเลือกคำนำหน้า" }]}
+                  name="prefix"
                   label="คำนำหน้า"
-                >                  
+                  rules={[{ required: true, message: "กรุณาเลือกคำนำหน้า" }]}
+                  className={`form-item-container ${prefix ? "success" : ""}`}
+                >
                   <Select
                     size="middle"
-                    style={{ width: "100%" }}
                     onChange={(value) => setPrefix(value)}
+                    style={{
+                      borderColor: prefix ? "#28a745" : "",
+                    }}
                   >
                     <Select.Option value="นาย">นาย</Select.Option>
                     <Select.Option value="น.ส.">น.ส.</Select.Option>
                     <Select.Option value="นาง">นาง</Select.Option>
                   </Select>
                 </Form.Item>
-                <Form.Item 
-                  label="ชื่อ" 
+                <Form.Item
+                  label="ชื่อ"
                   className="w-full"
                   name="firstname"
+                  hasFeedback
+                  validateStatus={firstname ? "success" : undefined}
                   rules={[{ required: true, message: "กรุณาระบุชื่อ" }]}
                 >
                   <Input
                     size="middle"
+                    value={firstname}
                     onChange={(e) => setFirstname(e.target.value)}
                     style={{
                       borderColor: firstname ? "#28a745" : "",
                     }}
-                    suffix={
-                      firstname && <FaCheck className="text-[#28a745]" />
-                    }
                   />
                 </Form.Item>
               </div>
-              <div className="w-full">
-                <label htmlFor="lastname">นามสกุล</label>
+              <Form.Item
+                className="w-full"
+                label="นามสกุล"
+                name="lastname"
+                hasFeedback
+                validateStatus={lastname ? "success" : undefined}
+                rules={[{ required: true, message: "กรุณาระบุนามสกุล" }]}
+              >
                 <Input
                   size="middle"
                   onChange={(e) => setLastname(e.target.value)}
+                  style={{
+                    borderColor: lastname ? "#28a745" : "",
+                  }}
                 />
-              </div>
-              <div className="w-full">
-                <label htmlFor="country">ประเทศที่ออกหนังสือเดินทาง</label>
+              </Form.Item>
+              <Form.Item
+                className={`form-item-container ${
+                  country ? "success" : ""
+                } w-full`}
+                label="ประเทศที่ออกหนังสือเดินทาง"
+                name="country"
+                hasFeedback
+                rules={[{ required: true, message: "กรุณาระบุนามสกุล" }]}
+              >
                 <Select
                   size="middle"
                   style={{ width: "100%" }}
                   placeholder={"-โปรดเลือก-"}
-                  onChange={(value) => setPrefix(value)}
+                  onChange={(value) => setCountry(value)}
                 >
                   <Select.Option value="ประเทศไทย">ประเทศไทย</Select.Option>
                   <Select.Option value="สิงคโปร์">สิงคโปร์</Select.Option>
                   <Select.Option value="อเมริกา">อเมริกา</Select.Option>
                 </Select>
-              </div>
+              </Form.Item>
             </div>
 
             <div className="flex gap-2 w-full">
-              <div className="w-[300px] flex-shrink-0">
-                <label htmlFor="email">อีเมล</label>
+              <Form.Item
+                className="w-[300px] flex-shrink-0"
+                name="email"
+                label="อีเมล"
+                hasFeedback
+                rules={[
+                  { required: true, message: "กรุณาระบุอีเมล" },
+                  {
+                    type: "email",
+                    message: "รูปแบบอีเมลไม่ถูกต้อง",
+                  },
+                ]}
+              >
                 <Input
                   size="middle"
                   onChange={(e) => setEmail(e.target.value)}
                 />
-              </div>
-              <div className="w-full">
-                <label htmlFor="confirmEmail">อีเมล (ยืนยัน)</label>
+              </Form.Item>
+              <Form.Item
+                className="w-full"
+                name="confirmEmail"
+                label="อีเมล (ยืนยัน)"
+                dependencies={["email"]}
+                hasFeedback
+                rules={[
+                  { required: true, message: "กรุณายืนยันอีเมล" },
+                  {
+                    validator(_, value) {
+                      if (!value || email === value) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(new Error("อีเมลไม่ตรงกัน"));
+                    },
+                  },
+                ]}
+              >
                 <Input
                   size="middle"
                   onChange={(e) => setConfirmEmail(e.target.value)}
                 />
-              </div>
-              <div className="w-full">
-                <label htmlFor="tel">หมายเลขโทรศัพท์</label>
-                <Input size="middle" onChange={(e) => setTel(e.target.value)} />
-              </div>
+              </Form.Item>
+              <Form.Item
+                className="w-full"
+                name="tel"
+                label="หมายเลขโทรศัพท์"
+                hasFeedback
+                rules={[
+                  { required: true, message: "กรุณาระบุหมายเลขโทรศัพท์" },
+                  { validator: validatePhoneNumber },
+                ]}
+              >
+                <Input
+                  size="middle"
+                  inputmode="numeric"
+                  onKeyDown={(event) => {
+                    if (!/[0-9]/.test(event.key) && event.key !== "Backspace") {
+                      event.preventDefault();
+                    }
+                  }}
+                  onChange={(e) => setTel(e.target.value)}
+                />
+              </Form.Item>
             </div>
           </div>
           {/* เลือกวิธีการชำระเงิน */}
@@ -250,9 +336,20 @@ const Reservation = () => {
             </div>
           </div>
           {/* ข้อตกลงและเงื่อนไขในการสำรองที่พัก */}
-          <div className="mt-12">
-            <h2>ข้อตกลงและเงื่อนไขในการสำรองที่พัก</h2>
-            <Checkbox className="mt-2" onChange={(e) => setConsent(e.target.checked)}>
+          <h2 className="mt-12">ข้อตกลงและเงื่อนไขในการสำรองที่พัก</h2>
+          <Form.Item
+            name="agreement"
+            valuePropName="checked"
+            rules={[
+              {
+                validator: (_, value) =>
+                  value
+                    ? Promise.resolve()
+                    : Promise.reject(new Error("กรุณายอบรับข้อตกลงและเงื่อนไขในการสำรองที่พัก")),
+              },
+            ]}
+          >
+            <Checkbox className="mt-2">
               <p>
                 ฉันได้อ่านและยอมรับ{" "}
                 <span className="text-[#db8056] underline font-semibold">
@@ -264,19 +361,18 @@ const Reservation = () => {
                 </span>
               </p>
             </Checkbox>
-          </div>
+          </Form.Item>
 
           <Button
             size="large"
             type="primary"
             style={{
-              backgroundColor: isFormValid()
-                ? "#db8056"
-                : "rgba(0, 0, 0, 0.04)",
-              color: isFormValid() ? "#fff" : "rgba(0, 0, 0, 0.25)",
+              backgroundColor: isValid ? "#db8056" : "rgba(0, 0, 0, 0.04)",
+              color: isValid ? "#fff" : "rgba(0, 0, 0, 0.25)",
             }}
             className="mt-12 w-fit ml-auto block !rounded-md"
-            disabled={!isFormValid()}
+            disabled={isSubmitDisabled}
+            htmlType="submit"
           >
             ดำเนินการต่อไปยังฟอร์มชำระเงินที่มีความปลอดภัย
           </Button>

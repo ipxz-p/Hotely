@@ -32,3 +32,8 @@ body {
 .ant-form-item-label {
   padding: 0 0 2px !important;
 }
+
+.form-item-container.success .ant-select .ant-select-selector, 
+.ant-input-status-success {
+  border-color: #28a745 !important;
+}
