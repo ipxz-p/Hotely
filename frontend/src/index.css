@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+label {
+    @apply text-sm whitespace-nowrap
+}
+
+h1 {
+    @apply text-2xl
+}
+
+h2 {
+    @apply text-xl
+}

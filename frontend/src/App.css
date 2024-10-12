@@ -1,0 +1,34 @@
+@font-face {
+  font-family: 'SUKHUMVITSET';
+  src: url('./fonts/sukhumvit-set_text.woff.ttf') format('woff');
+}
+
+body {
+  font-family: 'SUKHUMVITSET', serif !important;
+}
+
+.ant-input.ant-input-lg {
+  border-radius: 0 !important;
+  height: 60px !important;
+}
+
+.ant-picker-large {
+  height: 60px !important;
+  border-radius: 0 !important;
+}
+
+.ant-select-lg {
+  height: 60px !important;
+  .ant-select-selector {
+    border-radius: 0 !important;
+  }
+}
+
+.ant-btn.ant-btn-lg {
+  border-radius: 0;
+  height: 60px;
+}
+
+.ant-form-item-label {
+  padding: 0 0 2px !important;
+}
