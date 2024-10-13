@@ -4,13 +4,15 @@ export const createRooms = (req, res, next) => {
     const {
         name,
         description,
-        image
+        image,
+        image_in_room_types,
+        logo
     } = req.body;
     if (!name || !description || !image) {
         return res.status(400).json({ message: "All fields are required." });
     }
-    db.execute("INSERT INTO rooms(name, description, image) VALUES (?, ?, ?, ?)",
-        [name, description, image],
+    db.execute("INSERT INTO rooms(name, description, image, image_in_room_types, logo) VALUES (?, ?, ?, ?, ?)",
+        [name, description, image, image_in_room_types, logo],
         (err, results) => {
             console.log(err);
             if (err) return next(err);

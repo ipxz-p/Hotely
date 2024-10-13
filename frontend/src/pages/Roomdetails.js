@@ -7,12 +7,12 @@ import { Spin } from "antd";
 const Roomdetails = () => {
   const { roomId } = useParams();
 
-  const navbarRef = useRef(null);
-
+  
   const [loading, setLoading] = useState(false);
   const [room, setRoom] = useState(null);
   const [roomTypes, setRoomTypes] = useState([]);
-
+  
+  const navbarRef = useRef(null);
   const handleToggleSidebar = () => {
     if (navbarRef.current) {
       navbarRef.current.toggleSidebar();

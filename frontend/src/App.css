@@ -1,6 +1,6 @@
 @font-face {
   font-family: 'SUKHUMVITSET';
-  src: url('./fonts/sukhumvit-set_text.woff.ttf') format('woff');
+  src: url('./assets/fonts/sukhumvit-set_text.woff.ttf') format('woff');
 }
 
 body {

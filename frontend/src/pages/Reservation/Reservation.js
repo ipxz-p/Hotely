@@ -1,18 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import React from "react";
+import { Link } from "react-router-dom";
 
 import { Button, Checkbox, Form, Input, Modal, Rate, Select, Spin } from "antd";
 import { FaCheck, FaCreditCard, FaLock } from "react-icons/fa";
 import TextArea from "antd/es/input/TextArea";
-import moment from "moment";
-import Payment from 'payment';
-import api from "../../axios";
 import { ReservationHelper } from "./ReservationHelper";
+import { validateCardNumber, validateEmailMatch, validatePhoneNumber } from "../../utils/validation";
 
 const Reservation = () => {
   const {
-    roomId,
-    roomTypeId,
     checkIn,
     checkOut,
     numberOfGuests,
@@ -20,156 +16,33 @@ const Reservation = () => {
     form,
     modalForm,
     loading,
-    setLoading,
     room,
-    setRoom,
     roomType,
-    setRoomType
-  } = ReservationHelper()
-
-  const [prefix, setPrefix] = useState(null);
-  const [firstname, setFirstname] = useState(null);
-  const [lastname, setLastname] = useState(null);
-  const [country, setCountry] = useState(null);
-  const [email, setEmail] = useState(null);
-  const [confirmEmail, setConfirmEmail] = useState(null);
-  const [tel, setTel] = useState(null);
-  const [consent, setConsent] = useState(null);
-  const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
-  const [totalPrice, setTotalPrice] = useState(true);
-  const [bookingNumber, setBookingNumber] = useState(false);
-  const [openCardDetailModal, setOpenCardDetailModal] = useState(false);
-  const [openSuccessPaymentModal, setOpenSuccessPaymentModal] = useState(false);
-  const [openFailedPaymentModal, setOpenFailedPaymentModal] = useState(false);
-  const [formattedNumber, setFormattedNumber] = useState("");
-
-  const values = Form.useWatch([], form);
-  const validatePhoneNumber = (_, value) => {
-    const phonePattern = /^0[0-9]{9}$/;
-    if (!value) {
-      return Promise.resolve();
-    }
-    if (phonePattern.test(value)) {
-      return Promise.resolve();
-    }
-    return Promise.reject(new Error("หมายเลขโทรศัพท์ไม่ถูกต้อง"));
-  };
-  const handleSubmit = () => {
-    const generateBookingNumber = () => {
-      return Math.floor(1000000 + Math.random() * 9000000).toString();
-    };
-
-    setBookingNumber(generateBookingNumber());
-    setOpenCardDetailModal(true);
-  };
-
-  const handleCardDetailForm = async () => {
-    try {
-      await modalForm.validateFields();
-      const cardNumber = modalForm.getFieldValue("cardNumber");
-      const { data } = await api(
-        `/blacklist/getBlacklistByCardBlacklist/${cardNumber}`
-      );
-      setOpenCardDetailModal(false);
-      if (typeof data === "object") {
-        setOpenFailedPaymentModal(true);
-      } else {
-        setOpenSuccessPaymentModal(true);
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  function clearNumber(value = '') {
-    return value.replace(/\D+/g, ''); // Remove all non-digit characters
-  }
-  
-  function formatCreditCardNumber(value) {
-    if (!value) return value;
-  
-    const issuer = Payment.fns.cardType(value); // Get the card type (Visa, Amex, etc.)
-    const clearValue = clearNumber(value);
-    let formattedValue;
-  
-    switch (issuer) {
-      case 'amex':
-        formattedValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 10)} ${clearValue.slice(10, 15)}`;
-        break;
-      case 'dinersclub':
-        formattedValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 10)} ${clearValue.slice(10, 14)}`;
-        break;
-      default:
-        formattedValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 8)} ${clearValue.slice(8, 12)} ${clearValue.slice(12, 16)}`;
-        break;
-    }
-  
-    return formattedValue.trim();
-  }
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    const formattedValue = formatCreditCardNumber(value);
-    setFormattedNumber(formattedValue);
-    console.log(formattedValue);
-
-    // Set the formatted value back into the form
-    modalForm.setFieldsValue({
-      cardNumber: formattedValue,
-    });
-  };
-
-  const validateCardNumber = (_, value) => {
-    if (!value) return Promise.resolve();
-    const clearValue = clearNumber(value);
-    const isValid = Payment.fns.validateCardNumber(clearValue);
-    return isValid ? Promise.resolve() : Promise.reject(new Error("หมายเลขบัตรไม่ถูกต้อง"));
-  };
-
-  useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        const res = await api.get(`/room/getRoomById/${roomId}`);
-        setRoom(res.data);
-      } catch (error) {
-        console.error("Error fetching room", error);
-      }
-    };
-
-    const fetchRoomType = async () => {
-      try {
-        const res = await api.get(`/roomTypes/getRoomTypeById/${roomTypeId}`);
-        setRoomType(res.data);
-      } catch (error) {
-        console.error("Error fetching room type", error);
-      }
-    };
-
-    const fetchData = async () => {
-      setLoading(true);
-      await Promise.all([fetchRoom(), fetchRoomType()]);
-      setLoading(false);
-    };
-
-    if (roomId && roomTypeId) {
-      fetchData();
-    }
-  }, [roomId, roomTypeId]);
-
-  useEffect(() => {
-    setTotalPrice((roomType?.price * totalDay).toLocaleString());
-  }, [roomType, totalDay]);
-
-  useEffect(() => {
-    form
-      .validateFields({ validateOnly: true })
-      .then((formValues) => {
-        setIsSubmitDisabled(!Object.values(formValues).length);
-      })
-      .catch(() => {
-        setIsSubmitDisabled(true);
-      });
-  }, [form, values]);
+    prefix,
+    setPrefix,
+    firstname,
+    setFirstname,
+    setLastname,
+    country,
+    setCountry,
+    email,
+    setEmail,
+    setConfirmEmail,
+    setTel,
+    isSubmitDisabled,
+    totalPrice,
+    bookingNumber,
+    openCardDetailModal,
+    setOpenCardDetailModal,
+    openSuccessPaymentModal,
+    setOpenSuccessPaymentModal,
+    openFailedPaymentModal,
+    setOpenFailedPaymentModal,
+    formattedNumber,
+    handleSubmit,
+    handleCardDetailForm,
+    handleInputChange
+  } = ReservationHelper();
 
   if (loading) {
     return <Spin fullscreen />;
@@ -542,14 +415,7 @@ const Reservation = () => {
                 hasFeedback
                 rules={[
                   { required: true, message: "กรุณายืนยันอีเมล" },
-                  {
-                    validator(_, value) {
-                      if (!value || email === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(new Error("อีเมลไม่ตรงกัน"));
-                    },
-                  },
+                  validateEmailMatch(email)
                 ]}
               >
                 <Input
