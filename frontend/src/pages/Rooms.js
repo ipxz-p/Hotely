@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import RoomCard from '../components/RoomCard';
 import api from '../axios';
-import moment from 'moment';
 import { Spin } from 'antd';
 
 const Rooms = () => {

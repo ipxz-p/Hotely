@@ -1,29 +1,32 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import api from "../axios";
+
 import { Button, Checkbox, Form, Input, Modal, Rate, Select, Spin } from "antd";
 import { FaCheck, FaCreditCard, FaLock } from "react-icons/fa";
 import TextArea from "antd/es/input/TextArea";
 import moment from "moment";
+import Payment from 'payment';
+import api from "../../axios";
+import { ReservationHelper } from "./ReservationHelper";
 
 const Reservation = () => {
-  const location = useLocation();
-  const query = new URLSearchParams(location.search);
-  const roomId = query.get("roomId");
-  const roomTypeId = query.get("roomTypeId");
-  const checkIn = query.get("checkIn");
-  const checkOut = query.get("checkOut");
-  const numberOfGuests = query.get("numberOfGuests");
-  const totalDay = moment(checkOut, "DD/MM/YYYY").diff(
-    moment(checkIn, "DD/MM/YYYY"),
-    "days"
-  );
+  const {
+    roomId,
+    roomTypeId,
+    checkIn,
+    checkOut,
+    numberOfGuests,
+    totalDay,
+    form,
+    modalForm,
+    loading,
+    setLoading,
+    room,
+    setRoom,
+    roomType,
+    setRoomType
+  } = ReservationHelper()
 
-  const [form] = Form.useForm();
-  const [modalForm] = Form.useForm();
-  const [loading, setLoading] = useState(true);
-  const [room, setRoom] = useState(null);
-  const [roomType, setRoomType] = useState(null);
   const [prefix, setPrefix] = useState(null);
   const [firstname, setFirstname] = useState(null);
   const [lastname, setLastname] = useState(null);
@@ -38,6 +41,7 @@ const Reservation = () => {
   const [openCardDetailModal, setOpenCardDetailModal] = useState(false);
   const [openSuccessPaymentModal, setOpenSuccessPaymentModal] = useState(false);
   const [openFailedPaymentModal, setOpenFailedPaymentModal] = useState(false);
+  const [formattedNumber, setFormattedNumber] = useState("");
 
   const values = Form.useWatch([], form);
   const validatePhoneNumber = (_, value) => {
@@ -75,6 +79,51 @@ const Reservation = () => {
     } catch (error) {
       console.error(error);
     }
+  };
+
+  function clearNumber(value = '') {
+    return value.replace(/\D+/g, ''); // Remove all non-digit characters
+  }
+  
+  function formatCreditCardNumber(value) {
+    if (!value) return value;
+  
+    const issuer = Payment.fns.cardType(value); // Get the card type (Visa, Amex, etc.)
+    const clearValue = clearNumber(value);
+    let formattedValue;
+  
+    switch (issuer) {
+      case 'amex':
+        formattedValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 10)} ${clearValue.slice(10, 15)}`;
+        break;
+      case 'dinersclub':
+        formattedValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 10)} ${clearValue.slice(10, 14)}`;
+        break;
+      default:
+        formattedValue = `${clearValue.slice(0, 4)} ${clearValue.slice(4, 8)} ${clearValue.slice(8, 12)} ${clearValue.slice(12, 16)}`;
+        break;
+    }
+  
+    return formattedValue.trim();
+  }
+
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    const formattedValue = formatCreditCardNumber(value);
+    setFormattedNumber(formattedValue);
+    console.log(formattedValue);
+
+    // Set the formatted value back into the form
+    modalForm.setFieldsValue({
+      cardNumber: formattedValue,
+    });
+  };
+
+  const validateCardNumber = (_, value) => {
+    if (!value) return Promise.resolve();
+    const clearValue = clearNumber(value);
+    const isValid = Payment.fns.validateCardNumber(clearValue);
+    return isValid ? Promise.resolve() : Promise.reject(new Error("หมายเลขบัตรไม่ถูกต้อง"));
   };
 
   useEffect(() => {
@@ -166,11 +215,13 @@ const Reservation = () => {
             name="cardNumber"
             rules={[
               { required: true, message: "กรุณาระบุหมายเลขบัตร" },
+              { validator: validateCardNumber }
             ]}
           >
             <Input
               className="h-[44px]"
-              value={modalForm.getFieldValue("cardNumber")}
+              value={formattedNumber}
+              onChange={handleInputChange}
             />
           </Form.Item>
           <Form.Item

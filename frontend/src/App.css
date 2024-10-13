@@ -42,3 +42,7 @@ body {
 .ant-rate .ant-rate-star:not(:last-child) {
   margin-inline-end: 2px;
 }
+
+.nav-stay {
+  height: calc(100vh - 60px);
+}

@@ -3,8 +3,9 @@ import React from "react";
 import { Route, Routes } from "react-router-dom";
 import Home from "./pages/Home";
 import Rooms from "./pages/Rooms";
-import Reservation from "./pages/Reservation";
+import Reservation from "./pages/Reservation/Reservation";
 import { ConfigProvider } from "antd";
+import Roomdetails from "./pages/Roomdetails";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
       <div className="App">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/stay/:roomId" element={<Roomdetails />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/rooms/reservation" element={<Reservation />} />
         </Routes>

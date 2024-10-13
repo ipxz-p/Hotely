@@ -1,19 +1,38 @@
 import { Button, DatePicker, Input, Select } from "antd";
 import moment from "moment";
-import React, { useState } from "react";
+import React, { forwardRef, useImperativeHandle, useState } from "react";
 import { IoCloseOutline } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const { RangePicker } = DatePicker;
 
-function Navbar() {
+const Navbar = forwardRef((props, ref) => {
+  const navigate = useNavigate();
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [roomId, setRoomId] = useState("");
   const [dates, setDates] = useState([]);
   const [numberOfRoom, setNumberOfRoom] = useState(null);
   const [numberOfGuests, setNumberOfGuests] = useState(null);
   const [promotion, setPromotion] = useState("");
-  const navigate = useNavigate();
+  const [isStayFocused, setIsStayFocused] = useState(false);
+  const [imgSrc, setImgSrc] = useState(null);
+  const [isImageVisible, setIsImageVisible] = useState(true);
+
+  // Fade out and change the image
+  const handleMouseEnter = (newImgSrc) => {
+    setIsImageVisible(false); // Trigger fade out
+    setTimeout(() => {
+      setImgSrc(newImgSrc); // Change image source
+      setIsImageVisible(true); // Trigger fade in
+    }, 300); // Delay to match transition duration
+  };
+
+  const handleBlur = () => {
+    setTimeout(() => {
+      setIsStayFocused(false);
+    }, 150);
+  };
 
   const navigateToRooms = () => {
     const params = {
@@ -32,27 +51,37 @@ function Navbar() {
   const isFormValid = () => {
     return roomId && dates?.length && numberOfRoom && numberOfGuests;
   };
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  useImperativeHandle(ref, () => ({
+    toggleSidebar,
+  }));
+
   return (
     <nav className="shadow-md">
       <div className="fixed top-0 h-[60px] z-10 w-full bg-[#fcf6ec] mx-auto flex justify-between items-center border-b border-[#b6b7b9]">
-        <div className="whitespace-nowrap text-xl font-bold h-full flex items-center border border-[#b6b7b9] px-4">TOSCANA VALLEY</div>
-        <div className="hidden md:flex space-x-8 border border-[#b6b7b9] h-full w-full items-center justify-around">
-          <div className="text-gray-800 cursor-pointer">
+        <Link
+          to="/"
+          className="text-center text-xl font-bold h-full flex items-center justify-center border border-[#b6b7b9] cursor-pointer flex-shrink-0 w-[220px]"
+        >
+          TOSCANA VALLEY
+        </Link>
+        <div className="hidden md:flex space-x-8 border border-[#b6b7b9] h-full w-full items-center gap-6">
+          <button
+            className="text-gray-800 cursor-pointer ml-14"
+            onFocus={() => setIsStayFocused(true)}
+            onBlur={handleBlur}
+          >
             ที่พัก
-          </div>
+          </button>
+          <div className="text-gray-800 cursor-pointer">ร้านอาหารและคาเฟ่</div>
           <div className="text-gray-800 cursor-pointer">
-            ร้านอาหารและคาเฟ่
+            ประชุมและงานจัดเลี้ยง
           </div>
-          <div className="text-gray-800 cursor-pointer">
-            Meeting & Celebrations
-          </div>
-          <div className="text-gray-800 cursor-pointer">
-            Special Offers
-          </div>
+          <div className="text-gray-800 cursor-pointer">โปรโมชั่น</div>
         </div>
         <div className="flex border border-[#b6b7b9] h-full items-center">
           <p className="px-6 cursor-pointer">EN</p>
@@ -66,6 +95,58 @@ function Navbar() {
           สำรองที่พัก
         </button>
       </div>
+
+      {isStayFocused && (
+        <div className="nav-stay fixed top-[60px] z-[999] bg-[#fcf6ec] w-full flex">
+          <div className="flex-shrink-0 w-[220px] border-r border-r-[#b6b7b9] text-sm p-4 flex flex-col gap-2">
+            <div>
+              <Link
+                to="/stay/1"
+                onMouseEnter={() =>
+                  handleMouseEnter(
+                    "https://images.travelanium.net/crs-file-manager/images/ibe?propertyid=1055&group=29&imagefullname=portofino+bg+booking+engine.jpg&rv=1702369383000"
+                  )
+                }
+              >
+                โฮเทล พอโตฟิโน่
+              </Link>
+            </div>
+            <div>
+              <Link
+                to="/stay/7"
+                onMouseEnter={() =>
+                  handleMouseEnter(
+                    "https://images.travelanium.net/crs-file-manager/images/ibe?propertyid=888&group=29&imagefullname=BG+Piazza.jpg&rv=1651308713000"
+                  )
+                }
+              >
+                ทอสกานา พิอาซา
+              </Link>
+            </div>
+            <div>
+              <Link
+                to="/stay/8"
+                onMouseEnter={() =>
+                  handleMouseEnter(
+                    "https://images.travelanium.net/crs-file-manager/images/ibe?propertyid=919&group=29&imagefullname=hero-banner-hotel-castello-della-valle.jpg&rv=1661140171000"
+                  )
+                }
+              >
+                คาสเทลโล่ เดลลา วัลเล่
+              </Link>
+            </div>
+          </div>
+          <div className="p-4 flex-grow flex items-center justify-center">
+            <img
+              src={imgSrc}
+              alt=""
+              className={`max-w-full max-h-full object-cover transition-opacity duration-300 ${
+                isImageVisible ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </div>
+        </div>
+      )}
 
       {/* sidebar */}
       {isSidebarOpen && (
@@ -173,6 +254,6 @@ function Navbar() {
       {/* END sidebar */}
     </nav>
   );
-}
+});
 
 export default Navbar;
