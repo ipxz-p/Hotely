@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import RoomCard from '../components/RoomCard';
 import api from '../axios';
+import moment from 'moment';
+import { Spin } from 'antd';
 
 const Rooms = () => {
+  const [loading, setLoading] = useState(true);
   const [roomTypes, setRoomTypes] = useState([])
   const [room, setRoom] = useState({})
   const location = useLocation();
@@ -18,23 +21,36 @@ const Rooms = () => {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        const res = await api.get(`/room/getRoomById/${roomId}`)
-        setRoom(res.data)
+        const res = await api.get(`/room/getRoomById/${roomId}`);
+        setRoom(res.data);
       } catch (error) {
-        console.error('Error fetching data', error);
+        console.error("Error fetching data", error);
       }
-    }
+    };
+
     const fetchRoomTypes = async () => {
       try {
-        const res = await api.get(`/roomTypes/getRoomTypesByRoomId/${roomId}`)
-        setRoomTypes(res.data)
+        const res = await api.get(`/roomTypes/getRoomTypesByRoomId/${roomId}`);
+        setRoomTypes(res.data);
       } catch (error) {
-        console.error('Error fetching data', error);
+        console.error("Error fetching data", error);
       }
+    };
+
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([fetchRoom(), fetchRoomTypes()]);
+      setLoading(false);
+    };
+
+    if (roomId) {
+      fetchData();
     }
-    fetchRoom()
-    fetchRoomTypes()
-  }, [roomId])
+  }, [roomId]);
+
+  if (loading) {
+    return <Spin fullscreen />;
+  }
 
   return (
     <div
@@ -81,6 +97,9 @@ const Rooms = () => {
             <RoomCard 
               roomId={room.id}
               roomTypeId={roomType.id}
+              checkIn={checkIn}
+              checkOut={checkOut}
+              numberOfGuests={numberOfGuests}
               type={roomType.type} 
               image={roomType.image}
               price={roomType.price}

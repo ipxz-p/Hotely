@@ -1,16 +1,29 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import api from "../axios";
-import { Button, Checkbox, Form, Input, Select } from "antd";
+import { Button, Checkbox, Form, Input, Modal, Rate, Select, Spin } from "antd";
 import { FaCheck, FaCreditCard, FaLock } from "react-icons/fa";
 import TextArea from "antd/es/input/TextArea";
+import moment from "moment";
 
 const Reservation = () => {
   const location = useLocation();
   const query = new URLSearchParams(location.search);
   const roomId = query.get("roomId");
-  const [room, setRoom] = useState(null);
+  const roomTypeId = query.get("roomTypeId");
+  const checkIn = query.get("checkIn");
+  const checkOut = query.get("checkOut");
+  const numberOfGuests = query.get("numberOfGuests");
+  const totalDay = moment(checkOut, "DD/MM/YYYY").diff(
+    moment(checkIn, "DD/MM/YYYY"),
+    "days"
+  );
+
   const [form] = Form.useForm();
+  const [modalForm] = Form.useForm();
+  const [loading, setLoading] = useState(true);
+  const [room, setRoom] = useState(null);
+  const [roomType, setRoomType] = useState(null);
   const [prefix, setPrefix] = useState(null);
   const [firstname, setFirstname] = useState(null);
   const [lastname, setLastname] = useState(null);
@@ -20,6 +33,12 @@ const Reservation = () => {
   const [tel, setTel] = useState(null);
   const [consent, setConsent] = useState(null);
   const [isSubmitDisabled, setIsSubmitDisabled] = useState(true);
+  const [totalPrice, setTotalPrice] = useState(true);
+  const [bookingNumber, setBookingNumber] = useState(false);
+  const [openCardDetailModal, setOpenCardDetailModal] = useState(false);
+  const [openSuccessPaymentModal, setOpenSuccessPaymentModal] = useState(false);
+  const [openFailedPaymentModal, setOpenFailedPaymentModal] = useState(false);
+
   const values = Form.useWatch([], form);
   const validatePhoneNumber = (_, value) => {
     const phonePattern = /^0[0-9]{9}$/;
@@ -32,12 +51,65 @@ const Reservation = () => {
     return Promise.reject(new Error("หมายเลขโทรศัพท์ไม่ถูกต้อง"));
   };
   const handleSubmit = () => {
-    alert("Pass");
+    const generateBookingNumber = () => {
+      return Math.floor(1000000 + Math.random() * 9000000).toString();
+    };
+
+    setBookingNumber(generateBookingNumber());
+    setOpenCardDetailModal(true);
   };
 
-  const hasErrors = form.getFieldsError().some(({ errors }) => errors.length);
-  const isTouched = form.isFieldsTouched(true);
-  const isValid = isTouched && !hasErrors && !isSubmitDisabled;
+  const handleCardDetailForm = async () => {
+    try {
+      await modalForm.validateFields();
+      const cardNumber = modalForm.getFieldValue("cardNumber");
+      const { data } = await api(
+        `/blacklist/getBlacklistByCardBlacklist/${cardNumber}`
+      );
+      setOpenCardDetailModal(false);
+      if (typeof data === "object") {
+        setOpenFailedPaymentModal(true);
+      } else {
+        setOpenSuccessPaymentModal(true);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchRoom = async () => {
+      try {
+        const res = await api.get(`/room/getRoomById/${roomId}`);
+        setRoom(res.data);
+      } catch (error) {
+        console.error("Error fetching room", error);
+      }
+    };
+
+    const fetchRoomType = async () => {
+      try {
+        const res = await api.get(`/roomTypes/getRoomTypeById/${roomTypeId}`);
+        setRoomType(res.data);
+      } catch (error) {
+        console.error("Error fetching room type", error);
+      }
+    };
+
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([fetchRoom(), fetchRoomType()]);
+      setLoading(false);
+    };
+
+    if (roomId && roomTypeId) {
+      fetchData();
+    }
+  }, [roomId, roomTypeId]);
+
+  useEffect(() => {
+    setTotalPrice((roomType?.price * totalDay).toLocaleString());
+  }, [roomType, totalDay]);
 
   useEffect(() => {
     form
@@ -50,17 +122,9 @@ const Reservation = () => {
       });
   }, [form, values]);
 
-  useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        const res = await api.get(`/room/getRoomById/${roomId}`);
-        setRoom(res.data);
-      } catch (error) {
-        console.error("Error fetching data", error);
-      }
-    };
-    fetchRoom();
-  }, [roomId]);
+  if (loading) {
+    return <Spin fullscreen />;
+  }
 
   return (
     <div
@@ -74,6 +138,221 @@ const Reservation = () => {
       }}
       className="pb-6"
     >
+      <Modal
+        centered
+        open={openCardDetailModal}
+        onCancel={() => setOpenCardDetailModal(false)}
+        width={400}
+        footer={null}
+        className="model"
+      >
+        <div className="flex items-center">
+          <img src={room?.logo} alt="Hotel Portofino" height="64" width="64" />
+          <div className="ml-2">
+            <p className="font-semibold">{room.name}</p>
+            <p>หมายเลขการจอง {bookingNumber}</p>
+          </div>
+        </div>
+        <p className="my-4 font-semibold text-lg">บัตรเครดิต/เดบิต</p>
+        <Form
+          form={modalForm}
+          layout="vertical"
+          autoComplete="off"
+          onFinish={handleCardDetailForm}
+        >
+          <Form.Item
+            label="หมายเลขบัตร"
+            className="w-full"
+            name="cardNumber"
+            rules={[
+              { required: true, message: "กรุณาระบุหมายเลขบัตร" },
+            ]}
+          >
+            <Input
+              className="h-[44px]"
+              value={modalForm.getFieldValue("cardNumber")}
+            />
+          </Form.Item>
+          <Form.Item
+            label="ชื่อบนบัตร"
+            className="w-full"
+            name="cardName"
+            rules={[{ required: true, message: "กรุณาระบุชื่อบนบัตร" }]}
+          >
+            <Input className="h-[44px]" />
+          </Form.Item>
+          <div className="flex gap-4">
+            <Form.Item
+              label="วันหมดอายุ"
+              className="w-full"
+              name="expire"
+              rules={[
+                { required: true, message: "กรุณาระบุวันหมดอายุ" },
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve();
+                    const unformattedValue = value.replace(/\D/g, ""); // Remove non-digits
+                    if (unformattedValue.length === 4) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error("วันหมดอายุต้องมีความยาว 4 ตัวอักษร")
+                    );
+                  },
+                },
+              ]}
+            >
+              <Input
+                className="h-[44px]"
+                placeholder="ดด/ปป"
+                value={modalForm.getFieldValue("expire")}
+                onChange={(e) => {
+                  let input = e.target.value.replace(/\D/g, ""); // Remove non-digits
+                  let month = input.substring(0, 2); // Extract the month part
+
+                  // Allow deletion without enforcing format
+                  if (input.length === 0) {
+                    modalForm.setFieldsValue({ expire: "" });
+                    return;
+                  }
+
+                  // Handle month input logic
+                  if (month.length === 1 && month !== "0" && month !== "1") {
+                    month = "0" + month; // If single digit, prepend '0'
+                  } else if (month === "00") {
+                    month = "01"; // Prevent '00', set it to '01'
+                  } else if (parseInt(month, 10) > 12) {
+                    month = "12"; // If month > 12, set it to '12'
+                  }
+
+                  // Limit the input to 4 digits for DD/YY format
+                  input = month + input.substring(2, 4); // Ensure only 2 digits for year part (YY)
+                  input = input.substring(0, 4);
+
+                  // Format as DD/YY
+                  let formattedInput = input;
+                  if (input.length > 2) {
+                    formattedInput =
+                      input.substring(0, 2) + "/" + input.substring(2, 4);
+                  }
+
+                  modalForm.setFieldsValue({ expire: formattedInput });
+                }}
+              />
+            </Form.Item>
+            <Form.Item
+              label="รหัสหลังบัตร"
+              className="w-full"
+              name="cardฺBackCode"
+              rules={[
+                { required: true, message: "กรุณาระบุรหัสหลังบัตร" },
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve();
+                    if (value.length !== 3) {
+                      return Promise.reject(
+                        new Error("รหัสหลังบัตรต้องมีความยาว 3 ตัวอักษร")
+                      );
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <Input
+                maxLength={3}
+                className="h-[44px]"
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  modalForm.setFieldsValue({ cardฺBackCode: value });
+                }}
+              />
+            </Form.Item>
+          </div>
+          <Form.Item
+            label="ประเทศหรือภูมิภาค"
+            name="country"
+            rules={[{ required: true, message: "กรุณาระบุประเทศ" }]}
+          >
+            <Select placeholder={"-โปรดเลือก-"} className="h-[44px]">
+              <Select.Option value="ประเทศไทย">ประเทศไทย</Select.Option>
+              <Select.Option value="สิงคโปร์">สิงคโปร์</Select.Option>
+              <Select.Option value="อเมริกา">อเมริกา</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item
+            style={{
+              marginBottom: 0,
+            }}
+          >
+            <Button
+              type="primary"
+              className="!rounded-md w-full h-[44px] font-semibold text-lg"
+              htmlType="submit"
+            >
+              Pay {totalPrice} THB
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
+      <Modal
+        centered
+        open={openSuccessPaymentModal}
+        onCancel={() => setOpenSuccessPaymentModal(false)}
+        width={400}
+        footer={null}
+      >
+        <div className="text-center bg-[#28a745] text-white p-2 mt-6 rounded-md">
+          <p className="text-3xl">การจองสำเร็จ</p>
+          <p className="text-xl">หมายเลขการจอง: {bookingNumber}</p>
+        </div>
+        <h2 className="my-2">การยืนยันการจอง</h2>
+        <p>
+          ลูกค้าสามารถปริ้นใบยืนยันการจองจากโรงแรมฉบับเต็มผ่านอีเมลยืนยัน
+          หรือถ่ายภาพหน้าจอนี้ไว้เพื่อเป็นหลักฐานในการเช็คอินเข้าที่พักและสอบถามรายละเอียดเพื่มเติมได้ทางโทรศัพท์
+          Tel: <u>044&nbsp;756&nbsp;558</u> (ติดต่อล็อบบี้)
+        </p>
+        <h2 className="my-2">รายการสรุปการจอง</h2>
+        <div className="p-2 bg-gray-400 text-xl text-white rounded-md">
+          Prices are in THB
+        </div>
+        <div className="text-sm mt-4 p-2 bg-[#f8f9fa] rounded-md">
+          <p>{roomType?.type}</p>
+          <p className="font-semibold">{numberOfGuests} ผู้ใหญ่</p>
+          <p className="text-end">
+            <span className="font-semibold mr-1">THB</span>
+            <span>{totalPrice}</span>
+          </p>
+        </div>
+
+        <div className="bg-[#EBE8E1] text-[#805d41] rounded-md mt-4 p-2 text-sm flex items-center justify-between">
+          <p className="text-xl">ยอดสุทธิ</p>
+          <div>
+            <p className="text-end">
+              THB <span className="text-3xl">{totalPrice}</span>
+            </p>
+            <p>รวมภาษีและค่าธรรมเนียม</p>
+          </div>
+        </div>
+        <h2 className="text-[#28a745] text-center mt-2">
+          ชำระผ่านบัตรเครดิต / เดบิตสำเร็จ
+        </h2>
+      </Modal>
+      <Modal
+        centered
+        open={openFailedPaymentModal}
+        onCancel={() => setOpenFailedPaymentModal(false)}
+        width={400}
+        footer={null}
+      >
+        <div className="text-center bg-red-600 text-white p-2 mt-6 rounded-md">
+          <p className="text-3xl">การจองไม่สำเร็จ</p>
+          <p className="text-xl">หมายเลขการจอง: {bookingNumber}</p>
+        </div>
+        <h2 className="text-red-500 text-center mt-2">
+          ชำระผ่านบัตรเครดิต / เดบิตไม่สำเร็จ
+        </h2>
+      </Modal>
       <nav
         className={`w-full bg-transparent mx-auto flex items-center ${
           room?.id === 1 ? "text-white" : "text-black"
@@ -107,8 +386,11 @@ const Reservation = () => {
                 <Form.Item
                   name="prefix"
                   label="คำนำหน้า"
+                  hasFeedback
                   rules={[{ required: true, message: "กรุณาเลือกคำนำหน้า" }]}
-                  className={`form-item-container ${prefix ? "success" : ""}`}
+                  className={`w-[130px] form-item-container ${
+                    prefix ? "success" : ""
+                  }`}
                 >
                   <Select
                     size="middle"
@@ -127,16 +409,18 @@ const Reservation = () => {
                   className="w-full"
                   name="firstname"
                   hasFeedback
-                  validateStatus={firstname ? "success" : undefined}
-                  rules={[{ required: true, message: "กรุณาระบุชื่อ" }]}
+                  rules={[
+                    { required: true, message: "กรุณาระบุชื่อ" },
+                    {
+                      max: 15,
+                      message: "ชื่อต้องไม่เกิน 15 ตัวอักษร",
+                    },
+                  ]}
                 >
                   <Input
                     size="middle"
                     value={firstname}
                     onChange={(e) => setFirstname(e.target.value)}
-                    style={{
-                      borderColor: firstname ? "#28a745" : "",
-                    }}
                   />
                 </Form.Item>
               </div>
@@ -145,15 +429,17 @@ const Reservation = () => {
                 label="นามสกุล"
                 name="lastname"
                 hasFeedback
-                validateStatus={lastname ? "success" : undefined}
-                rules={[{ required: true, message: "กรุณาระบุนามสกุล" }]}
+                rules={[
+                  { required: true, message: "กรุณาระบุนามสกุล" },
+                  {
+                    max: 15,
+                    message: "นามสกุลต้องไม่เกิน 15 ตัวอักษร",
+                  },
+                ]}
               >
                 <Input
                   size="middle"
                   onChange={(e) => setLastname(e.target.value)}
-                  style={{
-                    borderColor: lastname ? "#28a745" : "",
-                  }}
                 />
               </Form.Item>
               <Form.Item
@@ -163,7 +449,7 @@ const Reservation = () => {
                 label="ประเทศที่ออกหนังสือเดินทาง"
                 name="country"
                 hasFeedback
-                rules={[{ required: true, message: "กรุณาระบุนามสกุล" }]}
+                rules={[{ required: true, message: "กรุณาระบุประเทศ" }]}
               >
                 <Select
                   size="middle"
@@ -187,8 +473,8 @@ const Reservation = () => {
                 rules={[
                   { required: true, message: "กรุณาระบุอีเมล" },
                   {
-                    type: "email",
-                    message: "รูปแบบอีเมลไม่ถูกต้อง",
+                    pattern: /^[a-zA-Z0-9._%+-]+@gmail\.com$/,
+                    message: "ต้องเป็นอีเมล @gmail.com เท่านั้น",
                   },
                 ]}
               >
@@ -232,7 +518,6 @@ const Reservation = () => {
               >
                 <Input
                   size="middle"
-                  inputmode="numeric"
                   onKeyDown={(event) => {
                     if (!/[0-9]/.test(event.key) && event.key !== "Backspace") {
                       event.preventDefault();
@@ -345,7 +630,11 @@ const Reservation = () => {
                 validator: (_, value) =>
                   value
                     ? Promise.resolve()
-                    : Promise.reject(new Error("กรุณายอบรับข้อตกลงและเงื่อนไขในการสำรองที่พัก")),
+                    : Promise.reject(
+                        new Error(
+                          "กรุณายอบรับข้อตกลงและเงื่อนไขในการสำรองที่พัก"
+                        )
+                      ),
               },
             ]}
           >
@@ -363,23 +652,81 @@ const Reservation = () => {
             </Checkbox>
           </Form.Item>
 
-          <Button
-            size="large"
-            type="primary"
-            style={{
-              backgroundColor: isValid ? "#db8056" : "rgba(0, 0, 0, 0.04)",
-              color: isValid ? "#fff" : "rgba(0, 0, 0, 0.25)",
-            }}
-            className="mt-12 w-fit ml-auto block !rounded-md"
-            disabled={isSubmitDisabled}
-            htmlType="submit"
-          >
-            ดำเนินการต่อไปยังฟอร์มชำระเงินที่มีความปลอดภัย
-          </Button>
+          <Form.Item>
+            <Button
+              size="large"
+              type="primary"
+              style={{
+                backgroundColor: !isSubmitDisabled
+                  ? "#db8056"
+                  : "rgba(0, 0, 0, 0.04)",
+                color: !isSubmitDisabled ? "#fff" : "rgba(0, 0, 0, 0.25)",
+              }}
+              className="mt-12 w-fit ml-auto block !rounded-md"
+              disabled={isSubmitDisabled}
+              htmlType="submit"
+            >
+              ดำเนินการต่อไปยังฟอร์มชำระเงินที่มีความปลอดภัย
+            </Button>
+          </Form.Item>
         </Form>
         {/* right-side */}
         <div className="sticky top-6 col-span-4 w-full h-fit bg-white rounded-md p-4 z-10">
           <p className="text-xl font-semibold mb-4">สรุปรายการจอง</p>
+          <div className="flex items-center">
+            <img
+              src={room?.logo}
+              alt="Hotel Portofino"
+              height="64"
+              width="64"
+            />
+            <div className="ml-2">
+              <p className="text-sm font-semibold">{room?.name}</p>
+              <p className="text-xs">เขาใหญ่, ประเทศไทย</p>
+              <Rate
+                disabled
+                defaultValue={5}
+                style={{
+                  fontSize: ".85rem",
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="text-sm flex items-center">
+            <span className="font-semibold mb-[1px]">{totalDay} คืน:</span>
+            <span className="ml-1">{checkIn}</span>
+            <span className="mx-1">-</span>
+            <span>{checkOut}</span>
+          </div>
+
+          <div className="text-sm mt-4 p-2 bg-[#f8f9fa] rounded-md">
+            <p>{roomType?.type}</p>
+            <p className="font-semibold">{numberOfGuests} ผู้ใหญ่</p>
+            <p className="text-end">
+              <span className="font-semibold mr-1">THB</span>
+              <span>{totalPrice}</span>
+            </p>
+          </div>
+
+          <div className="bg-[#EBE8E1] text-[#805d41] rounded-md mt-4 p-2 text-sm flex items-center justify-between">
+            <p className="text-xl">ยอดสุทธิ</p>
+            <div>
+              <p className="text-end">
+                THB <span className="text-3xl">{totalPrice}</span>
+              </p>
+              <p>รวมภาษีและค่าธรรมเนียม</p>
+            </div>
+          </div>
+
+          <div className="text-sm mt-4 border-b border-b-[#b6b7b9] flex justify-between pb-1">
+            <p>ชำระเงินตอนนี้</p>
+            <p>THB {totalPrice}</p>
+          </div>
+          <div className="text-sm flex justify-between pt-1">
+            <p>ชำระเงินที่โรงแรม</p>
+            <p>THB 0</p>
+          </div>
         </div>
       </div>
     </div>

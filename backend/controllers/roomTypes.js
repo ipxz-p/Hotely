@@ -19,6 +19,18 @@ export const createRoomTypes = (req, res, next) => {
     )
 }
 
+export const getRoomTypeById = (req, res, next) => {
+    const { id } = req.params
+    db.query("SELECT * FROM `room_types` WHERE id = ?", 
+        id,
+        (err, results) => {
+            if(err) return next(err)
+            if (results.length === 0) return res.status(404).json({ message: "Room type not found" });
+            return res.status(200).json(results[0])
+        }
+    )
+}
+
 export const getRoomTypesByRoomId = (req, res, next) => {
     const { roomId } = req.params
     db.query("SELECT * FROM `room_types` WHERE room_id = ?", 

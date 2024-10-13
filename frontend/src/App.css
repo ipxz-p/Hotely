@@ -34,6 +34,11 @@ body {
 }
 
 .form-item-container.success .ant-select .ant-select-selector, 
-.ant-input-status-success {
+.ant-input-status-success, 
+.ant-select-status-success .ant-select-selector {
   border-color: #28a745 !important;
+}
+
+.ant-rate .ant-rate-star:not(:last-child) {
+  margin-inline-end: 2px;
 }

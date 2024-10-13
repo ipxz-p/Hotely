@@ -4,12 +4,15 @@ import { IoFastFood } from "react-icons/io5";
 import { IoIosWifi } from "react-icons/io";
 import { useNavigate } from "react-router-dom";
 
-const RoomCard = ({ roomId, roomTypeId, type, image, price }) => {
+const RoomCard = ({ roomId, roomTypeId, checkIn, checkOut, numberOfGuests, type, image, price }) => {
     const navigate = useNavigate()
     const navigateToReservation = () => {
         const params = {
             roomId,
-            roomTypeId
+            roomTypeId,
+            checkIn,
+            checkOut,
+            numberOfGuests
           };
           const queryString = new URLSearchParams(params).toString();
           const url = `/rooms/reservation?${queryString}`;
