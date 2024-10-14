@@ -5,7 +5,7 @@ import { Button, Checkbox, Form, Input, Modal, Rate, Select, Spin } from "antd";
 import { FaCheck, FaCreditCard, FaLock } from "react-icons/fa";
 import TextArea from "antd/es/input/TextArea";
 import { ReservationHelper } from "./ReservationHelper";
-import { validateCardNumber, validateEmailMatch, validatePhoneNumber } from "../../utils/validation";
+import { validateEmailMatch, validatePhoneNumber } from "../../utils/validation";
 
 const Reservation = () => {
   const {
@@ -88,7 +88,6 @@ const Reservation = () => {
             name="cardNumber"
             rules={[
               { required: true, message: "กรุณาระบุหมายเลขบัตร" },
-              { validator: validateCardNumber }
             ]}
           >
             <Input

@@ -21,11 +21,9 @@ export const validateEmailMatch = (email) => ({
   },
 });
 
-export const validateCardNumber = (_, value) => {
-  if (!value) return Promise.resolve();
+export const validateCardNumber = (value) => {
+  if (!value) return false;
   const clearValue = removeAllNonDigit(value);
   const isValid = Payment.fns.validateCardNumber(clearValue);
-  return isValid
-    ? Promise.resolve()
-    : Promise.reject(new Error("หมายเลขบัตรไม่ถูกต้อง"));
+  return isValid;
 };

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../../axios";
 import { formatCreditCardNumber } from "../../utils/utils";
+import { validateCardNumber } from "../../utils/validation";
 
 export const ReservationHelper = () => {
   const location = useLocation();
@@ -101,9 +102,14 @@ export const ReservationHelper = () => {
     try {
       await modalForm.validateFields();
       const cardNumber = modalForm.getFieldValue("cardNumber");
+      const isCardNumberValid = validateCardNumber(cardNumber);
+      const expire = modalForm.getFieldValue("expire");
+      const expiryDate = moment(expire, "MM/YY");
+      const isExpire = expiryDate.isBefore(moment(), "month")
       const { data } = await api(`/blacklist/getBlacklistByCardBlacklist/${cardNumber}`);
+      
       setOpenCardDetailModal(false);
-      if (typeof data === "object") {
+      if (!isCardNumberValid || isExpire || typeof data === "object") {
         setOpenFailedPaymentModal(true);
       } else {
         setOpenSuccessPaymentModal(true);
