@@ -104,7 +104,7 @@ const Navbar = forwardRef((props, ref) => {
                 to="/stay/1"
                 onMouseEnter={() =>
                   handleMouseEnter(
-                    "https://images.travelanium.net/crs-file-manager/images/ibe?propertyid=1055&group=29&imagefullname=portofino+bg+booking+engine.jpg&rv=1702369383000"
+                    "/img/ibe.jfif"
                   )
                 }
               >
@@ -116,7 +116,7 @@ const Navbar = forwardRef((props, ref) => {
                 to="/stay/7"
                 onMouseEnter={() =>
                   handleMouseEnter(
-                    "https://images.travelanium.net/crs-file-manager/images/ibe?propertyid=888&group=29&imagefullname=BG+Piazza.jpg&rv=1651308713000"
+                    "/img/ibe2.jfif"
                   )
                 }
               >
@@ -128,7 +128,7 @@ const Navbar = forwardRef((props, ref) => {
                 to="/stay/8"
                 onMouseEnter={() =>
                   handleMouseEnter(
-                    "https://images.travelanium.net/crs-file-manager/images/ibe?propertyid=919&group=29&imagefullname=hero-banner-hotel-castello-della-valle.jpg&rv=1661140171000"
+                    "/img/ibe3.jfif"
                   )
                 }
               >

@@ -469,22 +469,22 @@ const Reservation = () => {
               </p>
               <div className="flex gap-2">
                 <img
-                  src="https://reservation.travelanium.net/propertyibe2/payment-icon/images/?file=card-type/visa.svg"
+                  src="/img/visa.svg"
                   width="50"
                   alt=""
                 />
                 <img
-                  src="https://reservation.travelanium.net/propertyibe2/payment-icon/images/?file=card-type/mastercard.svg"
+                  src="/img/mc.svg"
                   width="35"
                   alt=""
                 />
                 <img
-                  src="https://reservation.travelanium.net/propertyibe2/payment-icon/images/?file=card-type/jcb.svg"
+                  src="/img/jcb.svg"
                   width="30"
                   alt=""
                 />
                 <img
-                  src="https://reservation.travelanium.net/propertyibe2/payment-icon/images/?file=card-type/amex.svg"
+                  src="/img/ae.svg"
                   width="50"
                   alt=""
                 />
